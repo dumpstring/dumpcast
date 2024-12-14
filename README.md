@@ -34,7 +34,7 @@ type config = {
     (measured in steps, server uses heartbeat, client uses renderstepped.) ]]
     VisAlwaysOnTop: boolean,    -- render visualization above other objects
     VisArrowSize: number,       -- size of visualization arrow
-    VisShapeQuality: number,    -- detail level of visualization
+    VisShapeQuality: number,    -- detail level of visualization (arrow, capsule, etc.)
     VisNormalPlaneSize: number, -- size of normal plane visualization
     
     FailColor: Color3,          -- color for failed casts
