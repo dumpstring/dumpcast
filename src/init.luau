@@ -155,12 +155,6 @@ local function render()
 	end
 end
 
-if game:GetService("RunService"):IsClient() then
-	game:GetService("RunService").RenderStepped:Connect(render)
-else
-	game:GetService("RunService").Heartbeat:Connect(render)
-end
-
 local dumpcast = {}
 
 local Caster = {}
@@ -437,4 +431,44 @@ function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
 	return self
 end
 
-return dumpcast
+export type dumpcast = {
+	new: (world: WorldRoot, config: config?) -> typeof(Caster),
+	StepSignal: RBXScriptSignal,
+}
+
+local dumpcastsignal = if game:GetService("RunService"):IsServer() then game:GetService("RunService").Heartbeat else game:GetService("RunService").RenderStepped
+local dumpcastrender = dumpcastsignal:Connect(render)
+
+local dumpcastmeta = setmetatable(dumpcast, {
+	__index = function(self, index)
+		if index == "StepSignal" then
+			return dumpcastsignal
+		end
+		return
+	end,
+	__newindex = function(self, index, value)
+		if index == "StepSignal" then
+			local isSignal = false
+			if typeof(value) == "RBXScriptSignal" then
+				isSignal = true
+			else
+				local s, val = pcall(function()
+					return type(value["Connect"]) == "function"
+				end)
+
+				isSignal = s and val
+			end
+			
+			assert(isSignal, "invalid signal provided for property StepSignal of dumpcast.")
+
+			dumpcastrender:Disconnect()
+			dumpcastsignal = value
+			dumpcastrender = dumpcastsignal:Connect(render)
+			return
+		end
+		rawset(dumpcast, index, value)
+	end,
+	__tostring = "dumpcast"
+})
+
+return dumpcastmeta
