@@ -128,5 +128,6 @@ function Caster:Capsulecast(
     overrideconfig?: config
 ): RaycastResult?
 ```
+note: the height for the capsule is not the same as the height of the capsule used in the cast. it is actually the `height + 2 * radius` 
 
 # [LICENSE](https://github.com/dumpstring/dumpcast/blob/main/LICENSE)
