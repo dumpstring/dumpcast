@@ -1,13 +1,13 @@
 local Ceive = require(script.Ceive)
 
 local rendering : {{
-	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast",
+	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast" | "cylindercast",
 	origin: Vector3,
 	direction: Vector3,
 	result: RaycastResult?,
 	radius: number?,
 	framesrendered: number,
-	capsuleheight: number?,
+	height: number?,
 	transform: CFrame?,
 	shapesize: Vector3?,
 	points: number?,
@@ -15,113 +15,102 @@ local rendering : {{
 }} = {}
 
 export type config = {
-	visenabled: boolean,
-	lifetime: number,
-	alwaysontop: boolean,
-	arrowsize: number,
-	arrowquality: number,
-	normalplanesize: number,
-	
-	spherequality: number,
-	
-	capsulecastresolution: number,
-	
-	failcolor: Color3,
-	successcolor: Color3,
+	VisualizeCast: boolean,
+	VisLifetime: number,
+	VisAlwaysOnTop: boolean,
+	VisArrowSize: number,
+	VisShapeQuality: number,
+	VisNormalPlaneSize: number,
+
+	FailColor: Color3,
+	SuccessColor: Color3,
 }
 
 local configbase = {
-	visenabled = true,
-	lifetime = 1,
-	alwaysontop = true,
+	VisualizeCast = true,
+	VisLifetime = 1,
+	VisAlwaysOnTop = true,
 
-	arrowsize = 0.25,
-	arrowquality = 12,
-	normalplanesize = 1,
-	
-	capsulecastresolution = 0.25,
+	VisArrowSize = 0.25,
+	VisShapeQuality = 12,
+	VisNormalPlaneSize = 1,
 
-	spherequality = 12,
-
-	failcolor = Color3.new(1, 0, 0),
-	successcolor = Color3.new(0, 1, 0)
+	FailColor = Color3.new(1, 0, 0),
+	SuccessColor = Color3.new(0, 1, 0)
 }
+
 
 local function render()
 	for i, v in ipairs(rendering) do
-		if v.framesrendered > v.config.lifetime then
+		if v.framesrendered > v.config.VisLifetime then
 			table.remove(rendering, table.find(rendering, v))
 			continue
 		end
-		
-		if not v.config.visenabled then
-			v.framesrendered += 1
-			continue
-		end
-		Ceive.PushProperty("AlwaysOnTop", v.config.alwaysontop)
+
+		Ceive.PushProperty("VisAlwaysOnTop", v.config.VisAlwaysOnTop)
 		if v.type == "raycast" then
 			local hitLength = v.direction.Magnitude
 			if v.result then
-				Ceive.PushProperty("Color3", v.config.successcolor)
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
 				hitLength = (v.origin - v.result.Position).Magnitude
 
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.normalplanesize, v.config.normalplanesize, 0))
-				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 			else
-				Ceive.PushProperty("Color3", v.config.failcolor)
-				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
+				Ceive.PushProperty("Color3", v.config.FailColor)
+				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 			end
 		end
 		if v.type == "spherecast" then
 			local hitLength = v.direction.Magnitude
 			if v.result then
-				Ceive.PushProperty("Color3", v.config.successcolor)
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
 				hitLength = v.result.Distance + v.radius
 
-				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * (hitLength - v.radius)), v.radius, 0, v.config.spherequality, 360)
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.normalplanesize, v.config.normalplanesize, 0))
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * (hitLength - v.radius)), v.radius, 0, v.config.VisShapeQuality, 360)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
 			else
-				Ceive.PushProperty("Color3", v.config.failcolor)
+				Ceive.PushProperty("Color3", v.config.FailColor)
 
-				Ceive.Arrow:Draw(v.origin, v.direction + v.origin, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * hitLength), v.radius, 0, v.config.spherequality, 360)
+				Ceive.Arrow:Draw(v.origin, v.direction + v.origin, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * hitLength), v.radius, 0, v.config.VisShapeQuality, 360)
 			end
 		end
 		if v.type == "capsulecast" then
 			local hitLength = v.direction.Magnitude
-			
+
 			if v.result then
-				Ceive.PushProperty("Color3", v.config.successcolor)
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
 				hitLength = v.result.Distance
-				
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.capsuleheight, v.config.spherequality)
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.normalplanesize, v.config.normalplanesize, 0))
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
 			else
-				Ceive.PushProperty("Color3", v.config.failcolor)
-				
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.capsuleheight, v.config.spherequality)
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
 			end
-			
+
 		end
 		if v.type == "shapecast" or v.type == "boxcast" then
 			local hitLength = v.direction.Magnitude
-			
-			if v.result then
-				Ceive.PushProperty("Color3", v.config.successcolor)
-				hitLength = v.result.Distance
-				
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, true)
-				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.normalplanesize, v.config.normalplanesize, 0))
-			else
-				Ceive.PushProperty("Color3", v.config.failcolor)
 
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
-				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, true)
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, false)
+				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, false)
 				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
 			end
 		end
@@ -129,18 +118,37 @@ local function render()
 			local hitLength = v.direction.Magnitude
 
 			if v.result then
-				Ceive.PushProperty("Color3", v.config.successcolor)
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
 				hitLength = v.result.Distance
 
-				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 				Ceive.Circle:Draw(CFrame.new(v.origin, v.origin + v.direction) + v.direction.Unit * hitLength, v.radius, v.points - 0.5, 360)
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.normalplanesize, v.config.normalplanesize, 0))
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
 			else
-				Ceive.PushProperty("Color3", v.config.failcolor)
+				Ceive.PushProperty("Color3", v.config.FailColor)
 
 				Ceive.Circle:Draw(CFrame.new(v.origin, v.origin + v.direction.Unit) + v.direction.Unit * hitLength, v.radius, v.points - 0.5, 360)
-				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.arrowsize, v.config.arrowsize, v.config.arrowquality)
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 			end
+		end
+
+		if v.type == "cylindercast" then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Cylinder:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Cylinder:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+			end
+
 		end
 
 		v.framesrendered += 1
@@ -158,122 +166,119 @@ local dumpcast = {}
 local Caster = {}
 
 function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	if not overrideconfig then
-		overrideconfig = self.Config
-	else
-		local b = table.clone(self.Config)
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			b[i] = v
+			overrideconfig[i] = v
 		end
-		overrideconfig = b
 	end
+
 	local res = (self.World :: WorldRoot):Raycast(origin, direction, rayparams)
-	local data = {
-		type = "raycast",
-		origin = origin,
-		direction = direction,
-		result = res,
-		config = overrideconfig,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "raycast",
+			origin = origin,
+			direction = direction,
+			result = res,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 	return res
 end
 
 function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	if not overrideconfig then
-		overrideconfig = self.Config
-	else
-		local b = table.clone(self.Config)
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			b[i] = v
+			overrideconfig[i] = v
 		end
-		overrideconfig = b
 	end
+
 	local res = (self.World :: WorldRoot):Spherecast(origin, radius, direction, rayparams)
-	local data = {
-		type = "spherecast",
-		origin = origin,
-		direction = direction,
-		result = res,
-		radius = radius,
-		config = overrideconfig,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "spherecast",
+			origin = origin,
+			direction = direction,
+			result = res,
+			radius = radius,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 	return res
 end
 
 function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	if not overrideconfig then
-		overrideconfig = self.Config
-	else
-		local b = table.clone(self.Config)
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			b[i] = v
+			overrideconfig[i] = v
 		end
-		overrideconfig = b
 	end
+
 	local res = (self.World :: WorldRoot):Shapecast(part, direction, rayparams)
-	local data = {
-		type = "shapecast",
-		transform = part.CFrame,
-		direction = direction,
-		result = res,
-		shapesize = part.Size,
-		config = overrideconfig,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "shapecast",
+			transform = part.CFrame,
+			direction = direction,
+			result = res,
+			shapesize = part.Size,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 	return res
 end
 
 function Caster:Boxcast(transform: CFrame, size: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	if not overrideconfig then
-		overrideconfig = self.Config
-	else
-		local b = table.clone(self.Config)
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			b[i] = v
+			overrideconfig[i] = v
 		end
-		overrideconfig = b
 	end
-	
+
 	local castpart = Instance.new("Part")
-	castpart.Transparency = 1
-	castpart.CanCollide = false
-	castpart.CanQuery = false
-	castpart.CanTouch = false
-	castpart.Anchored = true
-	castpart.Locked = true
-	
-	castpart.Name = "dumpcast_BoxcastPart"
 	castpart.CFrame = transform
 	castpart.Size = size
-	
+
 	local res = (self.World :: WorldRoot):Shapecast(castpart, direction, rayparams)
 	castpart:Destroy()
-	local data = {
-		type = "boxcast",
-		transform = transform,
-		direction = direction,
-		result = res,
-		shapesize = size,
-		config = overrideconfig,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "boxcast",
+			transform = transform,
+			direction = direction,
+			result = res,
+			shapesize = size,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 end
 
-function Caster:CircleCast(origin: Vector3, radius: number, points: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	if not overrideconfig then
-		overrideconfig = self.Config
-	else
-		local b = table.clone(self.Config)
+function Caster:Circlecast(origin: Vector3, radius: number, points: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			b[i] = v
+			overrideconfig[i] = v
 		end
-		overrideconfig = b
 	end
 
 	local directionUnit = direction.Unit
@@ -296,32 +301,72 @@ function Caster:CircleCast(origin: Vector3, radius: number, points: number, dire
 		end
 	end
 
-	local data = {
-		type = "circlecast",
-		origin = origin,
-		direction = direction,
-		result = closestHitResult,
-		points = points,
-		radius = radius,
-		config = overrideconfig,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "circlecast",
+			origin = origin,
+			direction = direction,
+			result = closestHitResult,
+			points = points,
+			radius = radius,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 
 	return closestHitResult
 end
 
-function Caster:Capsulecast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
-	local config = overrideconfig or self.Config
+function Caster:Cylindercast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
-		config = table.clone(self.Config)
+		overrideconfig = table.clone(self.Config)
 		for i, v in pairs(overrideconfig) do
-			config[i] = v
+			overrideconfig[i] = v
 		end
 	end
 
-	local resolution = config.capsulecastresolution or 3
-	local length = direction.Magnitude
+	local cylinderPart = Instance.new("Part")
+	cylinderPart.Shape = Enum.PartType.Cylinder
+	cylinderPart.Size = Vector3.new(height, radius * 2, radius * 2)
+	cylinderPart.CFrame = transform * CFrame.Angles(0, math.pi / 2, math.pi / 2)
+
+	local cylinderResult = self.World:Shapecast(
+		cylinderPart, 
+		direction, 
+		rayparams
+	)
+
+	cylinderPart:Destroy()
+
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "cylindercast",
+			direction = direction,
+			result = cylinderResult,
+			radius = radius,
+			height = height,
+			transform = transform,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+
+	return cylinderResult
+end
+
+function Caster:Capsulecast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
 
 	local halfHeight = height / 2
 	local capsuleUp = transform.UpVector
@@ -329,39 +374,47 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 	local startPoint = capsuleOrigin - capsuleUp * halfHeight
 	local endPoint = capsuleOrigin + capsuleUp * halfHeight
 
-	local stepCount = math.max(1, math.ceil(length * resolution))
-	local stepSize = 1 / stepCount
+	local bottomCapResult = self.World:Spherecast(startPoint, radius, direction, rayparams) or false
+	local topCapResult = self.World:Spherecast(endPoint, radius, direction, rayparams) or false
+
+	local cylinderPart = Instance.new("Part")
+	cylinderPart.Shape = Enum.PartType.Cylinder
+	cylinderPart.Size = Vector3.new(height, radius * 2, radius * 2)
+	cylinderPart.CFrame = transform * CFrame.Angles(0, math.pi / 2, math.pi / 2)
+
+	local cylinderResult = self.World:Shapecast(
+		cylinderPart, 
+		direction, 
+		rayparams
+	) or false
+
+	cylinderPart:Destroy()
 
 	local closestHit = nil
 	local closestDistance = math.huge
 
-	for i = 0, stepCount do
-		local t = i / stepCount
-		local currentOrigin = startPoint:Lerp(endPoint, t)
-
-		local res = (self :: WorldRoot):Spherecast(currentOrigin, radius, direction, rayparams)
-
+	local resultsToCheck = {bottomCapResult, topCapResult, cylinderResult}
+	for _, res in ipairs(resultsToCheck) do
 		if res and res.Distance < closestDistance then
 			closestHit = res
 			closestDistance = res.Distance
-
-			if config.strictFirstHit then
-				break
-			end
 		end
 	end
 
-	local data = {
-		type = "capsulecast",
-		direction = direction,
-		result = closestHit,
-		radius = radius,
-		capsuleheight = height,
-		transform = transform,
-		config = config,
-		framesrendered = 0
-	}
-	table.insert(rendering, data)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "capsulecast",
+			direction = direction,
+			result = closestHit,
+			radius = radius,
+			height = height,
+			transform = transform,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
 
 	return closestHit
 end
@@ -378,7 +431,7 @@ function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
 	end
 	local self = setmetatable({}, {__index = Caster})
 
-	self.World = world or workspace
+	self.World = world
 	self.Config = config
 
 	return self
