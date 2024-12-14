@@ -1,6 +1,6 @@
 # dumpcast
 
-a raycast module with raycast visualization & custom raycast types in Roblox.
+custom raycast types & raycast visualization for roblox.
 
 ## installation
 
