@@ -31,7 +31,7 @@ local Caster = dumpcast.new(workspace, {VisualizeCast = false})
 type config = {
     VisualizeCast: boolean,     -- enable/disable cast visualization
     VisLifetime: number,        --[[ visualization duration
-    (measured in steps, server uses heartbeat, client uses renderstepped.) ]]
+    (measured in steps, uses dumpcast.StepSignal connection for each step.) ]]
     VisAlwaysOnTop: boolean,    -- render visualization above other objects
     VisArrowSize: number,       -- size of visualization arrow
     VisShapeQuality: number,    -- detail level of visualization (arrow, capsule, etc.)
@@ -40,6 +40,19 @@ type config = {
     FailColor: Color3,          -- color for failed casts
     SuccessColor: Color3        -- color for successful casts
 }
+```
+
+`dumpcast.StepSignal` - you may overwrite this value to make dumpcast use a different signal for rendering. (default is `RenderStepped` for client & Heartbeat for server.)
+note: it also supports custom signal implementations.
+```lua
+dumpcast.StepSignal = game:GetService("RunService").RenderStepped
+dumpcast.StepSignal = game:GetService("RunService").Stepped
+dumpcast.StepSignal = game:GetService("RunService").Heartbeat
+
+-- custom signal (works with goodsignal, etc.)
+local Signal = FastSignal.new()
+dumpcast.StepSignal = Signal
+Signal:Fire() -- step
 ```
 
 ## caster methods
