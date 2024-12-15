@@ -1,3 +1,5 @@
+--!native
+
 local Ceive = require(script.Ceive)
 
 local rendering : {{
@@ -431,15 +433,10 @@ function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
 	return self
 end
 
-export type dumpcast = {
-	new: (world: WorldRoot, config: config?) -> typeof(Caster),
-	StepSignal: RBXScriptSignal,
-}
-
 local dumpcastsignal = if game:GetService("RunService"):IsServer() then game:GetService("RunService").Heartbeat else game:GetService("RunService").RenderStepped
 local dumpcastrender = dumpcastsignal:Connect(render)
 
-local dumpcastmeta = setmetatable(dumpcast, {
+setmetatable(dumpcast, {
 	__index = function(self, index)
 		if index == "StepSignal" then
 			return dumpcastsignal
@@ -471,4 +468,9 @@ local dumpcastmeta = setmetatable(dumpcast, {
 	__tostring = "dumpcast"
 })
 
-return dumpcastmeta
+export type dumpcast = {
+	new: (world: WorldRoot, config: config?) -> typeof(Caster),
+	StepSignal: RBXScriptSignal,
+}
+
+return (dumpcast :: dumpcast)
