@@ -91,10 +91,10 @@ function Caster:Shapecast(
 ): RaycastResult?
 ```
 
-### Boxcast
+### Blockcast
 
 ```lua
-function Caster:Boxcast(
+function Caster:Blockcast(
     transform: CFrame, 
     size: Vector3, 
     direction: Vector3, 

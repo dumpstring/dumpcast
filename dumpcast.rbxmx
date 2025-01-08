@@ -1,0 +1,3082 @@
+<roblox version="4">
+  <Item class="ModuleScript" referent="0">
+    <Properties>
+      <string name="Name">dumpcast</string>
+      <string name="Source">--!native
+
+local Ceive = require(script.Ceive)
+
+local rendering : {{
+	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast" | "cylindercast",
+	origin: Vector3,
+	direction: Vector3,
+	result: RaycastResult?,
+	radius: number?,
+	framesrendered: number,
+	height: number?,
+	transform: CFrame?,
+	shapesize: Vector3?,
+	points: number?,
+	config: config,
+}} = {}
+
+export type config = {
+	VisualizeCast: boolean,
+	VisLifetime: number,
+	VisAlwaysOnTop: boolean,
+	VisArrowSize: number,
+	VisShapeQuality: number,
+	VisNormalPlaneSize: number,
+
+	FailColor: Color3,
+	SuccessColor: Color3,
+}
+
+local configbase = {
+	VisualizeCast = true,
+	VisLifetime = 1,
+	VisAlwaysOnTop = true,
+
+	VisArrowSize = 0.25,
+	VisShapeQuality = 12,
+	VisNormalPlaneSize = 1,
+
+	FailColor = Color3.new(1, 0, 0),
+	SuccessColor = Color3.new(0, 1, 0)
+}
+
+
+local function render()
+	for i, v in ipairs(rendering) do
+		if v.framesrendered > v.config.VisLifetime then
+			table.remove(rendering, table.find(rendering, v))
+			continue
+		end
+
+		Ceive.PushProperty("VisAlwaysOnTop", v.config.VisAlwaysOnTop)
+		if v.type == "raycast" then
+			local hitLength = v.direction.Magnitude
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = (v.origin - v.result.Position).Magnitude
+
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+			end
+		end
+		if v.type == "spherecast" then
+			local hitLength = v.direction.Magnitude
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance + v.radius
+
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * (hitLength - v.radius)), v.radius, 0, v.config.VisShapeQuality, 360)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.origin, v.direction + v.origin, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * hitLength), v.radius, 0, v.config.VisShapeQuality, 360)
+			end
+		end
+		if v.type == "capsulecast" then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+			end
+
+		end
+		if v.type == "shapecast" or v.type == "boxcast" then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, false)
+				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Box:Draw(v.transform + v.direction.Unit * hitLength, v.shapesize, false)
+				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
+			end
+		end
+		if v.type == "circlecast" then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Circle:Draw(CFrame.new(v.origin, v.origin + v.direction) + v.direction.Unit * hitLength, v.radius, v.points - 0.5, 360)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Circle:Draw(CFrame.new(v.origin, v.origin + v.direction.Unit) + v.direction.Unit * hitLength, v.radius, v.points - 0.5, 360)
+				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+			end
+		end
+
+		if v.type == "cylindercast" then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Cylinder:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Cylinder:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+			end
+
+		end
+
+		v.framesrendered += 1
+	end
+end
+
+local dumpcast = {}
+
+local Caster = {}
+
+function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local res = (self.World :: WorldRoot):Raycast(origin, direction, rayparams)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "raycast",
+			origin = origin,
+			direction = direction,
+			result = res,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+	return res
+end
+
+function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local res = (self.World :: WorldRoot):Spherecast(origin, radius, direction, rayparams)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "spherecast",
+			origin = origin,
+			direction = direction,
+			result = res,
+			radius = radius,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+	return res
+end
+
+function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local res = (self.World :: WorldRoot):Shapecast(part, direction, rayparams)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "shapecast",
+			transform = part.CFrame,
+			direction = direction,
+			result = res,
+			shapesize = part.Size,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+	return res
+end
+
+function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local res = (self.World :: WorldRoot):Blockcast(transform, size, direction, rayparams)
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "boxcast",
+			transform = transform,
+			direction = direction,
+			result = res,
+			shapesize = size,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+end
+
+function Caster:Circlecast(origin: Vector3, radius: number, points: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local directionUnit = direction.Unit
+	local angleStep = 2 * math.pi / points
+	local closestHitResult
+	local closestDistance = math.huge
+
+	for i = 0, points - 1 do
+		local angle = i * angleStep
+		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * radius
+		local startPoint = origin + offset
+		local res = (self.World :: WorldRoot):Raycast(startPoint, direction, rayparams)
+
+		if res then
+			local hitDistance = (origin - res.Position).Magnitude
+			if hitDistance &lt; closestDistance then
+				closestHitResult = res
+				closestDistance = hitDistance
+			end
+		end
+	end
+
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "circlecast",
+			origin = origin,
+			direction = direction,
+			result = closestHitResult,
+			points = points,
+			radius = radius,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+
+	return closestHitResult
+end
+
+function Caster:Cylindercast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local cylinderPart = Instance.new("Part")
+	cylinderPart.Shape = Enum.PartType.Cylinder
+	cylinderPart.Size = Vector3.new(height, radius * 2, radius * 2)
+	cylinderPart.CFrame = transform * CFrame.Angles(0, math.pi / 2, math.pi / 2)
+
+	local cylinderResult = self.World:Shapecast(
+		cylinderPart, 
+		direction, 
+		rayparams
+	)
+
+	cylinderPart:Destroy()
+
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "cylindercast",
+			direction = direction,
+			result = cylinderResult,
+			radius = radius,
+			height = height,
+			transform = transform,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+
+	return cylinderResult
+end
+
+function Caster:Capsulecast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	overrideconfig = overrideconfig or self.Config
+	if overrideconfig and overrideconfig ~= self.Config then
+		overrideconfig = table.clone(self.Config)
+		for i, v in pairs(overrideconfig) do
+			overrideconfig[i] = v
+		end
+	end
+
+	local halfHeight = height / 2
+	local capsuleUp = transform.UpVector
+	local capsuleOrigin = transform.Position
+	local startPoint = capsuleOrigin - capsuleUp * halfHeight
+	local endPoint = capsuleOrigin + capsuleUp * halfHeight
+
+	local bottomCapResult = self.World:Spherecast(startPoint, radius, direction, rayparams) or false
+	local topCapResult = self.World:Spherecast(endPoint, radius, direction, rayparams) or false
+
+	local cylinderPart = Instance.new("Part")
+	cylinderPart.Shape = Enum.PartType.Cylinder
+	cylinderPart.Size = Vector3.new(height, radius * 2, radius * 2)
+	cylinderPart.CFrame = transform * CFrame.Angles(0, math.pi / 2, math.pi / 2)
+
+	local cylinderResult = self.World:Shapecast(
+		cylinderPart, 
+		direction, 
+		rayparams
+	) or false
+
+	cylinderPart:Destroy()
+
+	local closestHit = nil
+	local closestDistance = math.huge
+
+	local resultsToCheck = {bottomCapResult, topCapResult, cylinderResult}
+	for _, res in ipairs(resultsToCheck) do
+		if res and res.Distance &lt; closestDistance then
+			closestHit = res
+			closestDistance = res.Distance
+		end
+	end
+
+
+	if overrideconfig.VisualizeCast then
+		local data = {
+			type = "capsulecast",
+			direction = direction,
+			result = closestHit,
+			radius = radius,
+			height = height,
+			transform = transform,
+			config = overrideconfig,
+			framesrendered = 0
+		}
+		table.insert(rendering, data)
+	end
+
+	return closestHit
+end
+
+function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
+	if not config then
+		config = table.clone(configbase)
+	else
+		local b = table.clone(configbase)
+		for i, v in pairs(config) do
+			b[i] = v
+		end
+		config = b
+	end
+	local self = setmetatable({}, {__index = Caster})
+
+	self.World = world
+	self.Config = config
+
+	return self
+end
+
+local dumpcastsignal = if game:GetService("RunService"):IsServer() then game:GetService("RunService").Heartbeat else game:GetService("RunService").RenderStepped
+local dumpcastrender = dumpcastsignal:Connect(render)
+
+setmetatable(dumpcast, {
+	__index = function(self, index)
+		if index == "StepSignal" then
+			return dumpcastsignal
+		end
+		return
+	end,
+	__newindex = function(self, index, value)
+		if index == "StepSignal" then
+			local isSignal = false
+			if typeof(value) == "RBXScriptSignal" then
+				isSignal = true
+			else
+				local s, val = pcall(function()
+					return type(value["Connect"]) == "function"
+				end)
+
+				isSignal = s and val
+			end
+			
+			assert(isSignal, "invalid signal provided for property StepSignal of dumpcast.")
+
+			dumpcastrender:Disconnect()
+			dumpcastsignal = value
+			dumpcastrender = dumpcastsignal:Connect(render)
+			return
+		end
+		rawset(dumpcast, index, value)
+	end,
+	__tostring = "dumpcast"
+})
+
+export type dumpcast = {
+	new: (world: WorldRoot, config: config?) -> typeof(Caster),
+	StepSignal: RBXScriptSignal,
+}
+
+return (dumpcast :: dumpcast)</string>
+    </Properties>
+    <Item class="ModuleScript" referent="1">
+      <Properties>
+        <string name="Name">Ceive</string>
+        <string name="Source"><![CDATA[--!nocheck
+
+-- CeiveImGizmo
+-- https://github.com/JakeyWasTaken/CeiveImGizmo
+
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Terrain = workspace:WaitForChild("Terrain")
+local TargetParent = workspace:WaitForChild("Terrain") -- Change this if you wish to have gizmos under a different location, e.g CoreGui
+
+assert(Terrain, "No terrain object found under workspace")
+assert(TargetParent, "No target parent found.")
+
+local AOTWireframeHandle: WireframeHandleAdornment = TargetParent:FindFirstChild("AOTGizmoAdornment")
+local WireframeHandle: WireframeHandleAdornment = TargetParent:FindFirstChild("GizmoAdornment")
+
+if not AOTWireframeHandle then
+	AOTWireframeHandle = Instance.new("WireframeHandleAdornment")
+	AOTWireframeHandle.Adornee = Terrain
+	AOTWireframeHandle.ZIndex = 1
+	AOTWireframeHandle.AlwaysOnTop = true
+	AOTWireframeHandle.Name = "AOTGizmoAdornment"
+	AOTWireframeHandle.Parent = TargetParent
+end
+
+if not WireframeHandle then
+	WireframeHandle = Instance.new("WireframeHandleAdornment")
+	WireframeHandle.Adornee = Terrain
+	WireframeHandle.ZIndex = 1
+	WireframeHandle.AlwaysOnTop = false
+	WireframeHandle.Name = "GizmoAdornment"
+	WireframeHandle.Parent = TargetParent
+end
+
+local Gizmos = script:WaitForChild("Gizmos")
+
+local ActiveObjects = {}
+local RetainObjects = {}
+local Debris = {}
+local Tweens = {}
+local PropertyTable = { AlwaysOnTop = true, Color3 = Color3.fromRGB(13, 105, 172), Transparency = 0 } -- Defaults
+local Pool = {}
+
+local CleanerScheduled = false
+
+local function Retain(Gizmo, GizmoProperties)
+	table.insert(RetainObjects, { Gizmo, GizmoProperties })
+end
+
+local function Register(object)
+	object.Parent = TargetParent
+	table.insert(ActiveObjects, object)
+end
+
+local function Release(object)
+	local ClassName = object.ClassName
+
+	if not Pool[ClassName] then
+		Pool[ClassName] = {}
+	end
+
+	object:Remove()
+	table.insert(Pool[ClassName], object)
+end
+
+local function Request(ClassName)
+	if not Pool[ClassName] then
+		return Instance.new(ClassName)
+	end
+
+	local Object = table.remove(Pool[ClassName])
+
+	if not Object then
+		return Instance.new(ClassName)
+	end
+
+	return Object
+end
+
+local function Lerp(a, b, t)
+	return a + (b - a) * t
+end
+
+local function deepCopy(original)
+	local copy = {}
+	for k, v in pairs(original) do
+		if type(v) == "table" then
+			v = deepCopy(v)
+		end
+		copy[k] = v
+	end
+	return copy
+end
+
+-- Types
+
+type IRay = {
+	Draw: (self: IRay, Origin: Vector3, End: Vector3) -> (),
+	Create: (
+		self: IRay,
+		Origin: Vector3,
+		End: Vector3
+	) -> { Origin: Vector3, End: Vector3, Color3: Color3, AlwaysOnTop: boolean, Transparency: number },
+}
+
+type IBox = {
+	Draw: (self: IBox, Transform: CFrame, Size: Vector3, DrawTriangles: boolean) -> (),
+	Create: (
+		self: IBox,
+		Transform: CFrame,
+		Size: Vector3,
+		DrawTriangles: boolean
+	) -> {
+		Transform: CFrame,
+		Size: Vector3,
+		DrawTriangles: boolean,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IPlane = {
+	Draw: (self: IPlane, Position: Vector3, Normal: Vector3, Size: Vector3) -> (),
+	Create: (
+		self: IPlane,
+		Position: Vector3,
+		Normal: Vector3,
+		Size: Vector3
+	) -> {
+		Position: Vector3,
+		Normal: Vector3,
+		Size: Vector3,
+		DrawTriangles: boolean,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IWedge = {
+	Draw: (self: IWedge, Transform: CFrame, Size: Vector3, DrawTriangles: boolean) -> (),
+	Create: (
+		self: IWedge,
+		Transform: CFrame,
+		Size: Vector3,
+		DrawTriangles: boolean
+	) -> {
+		Transform: CFrame,
+		Size: Vector3,
+		DrawTriangles: boolean,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ICircle = {
+	Draw: (self: ICircle, Transform: CFrame, Radius: number, Subdivisions: number, Angle: number, ConnectToStart: boolean?) -> (),
+	Create: (
+		self: ICircle,
+		Transform: CFrame,
+		Radius: number,
+		Subdivisions: number,
+		Angle: number,
+		ConnectToStart: boolean?
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Subdivisions: number,
+		ConnectToStart: boolean?,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ISphere = {
+	Draw: (self: ISphere, Transform: CFrame, Radius: number, Subdivisions: number, Angle: number) -> (),
+	Create: (
+		self: ISphere,
+		Transform: CFrame,
+		Radius: number,
+		Subdivisions: number,
+		Angle: number
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Subdivisions: number,
+		Angle: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ICylinder = {
+	Draw: (self: ICylinder, Transform: CFrame, Radius: number, Length: number, Subdivisions: number) -> (),
+	Create: (
+		self: ICylinder,
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ICapsule = {
+	Draw: (self: ICapsule, Transform: CFrame, Radius: number, Length: number, Subdivisions: number) -> (),
+	Create: (
+		self: ICapsule,
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ICone = {
+	Draw: (self: ICone, Transform: CFrame, Radius: number, Length: number, Subdivisions: number) -> (),
+	Create: (
+		self: ICone,
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Subdivisions: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IArrow = {
+	Draw: (self: IArrow, Origin: Vector3, End: Vector3, Radius: number, Length: number, Subdivisions: number) -> (),
+	Create: (
+		self: IArrow,
+		Origin: Vector3,
+		End: Vector3,
+		Radius: number,
+		Length: number,
+		Subdivisions: number
+	) -> {
+		Origin: Vector3,
+		End: Vector3,
+		Radius: number,
+		Length: number,
+		Subdivisions: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IMesh = {
+	Draw: (self: IMesh, Transform: CFrame, Size: Vector3, Vertices: {}, Faces: {}) -> (),
+	Create: (
+		self: IMesh,
+		Transform: CFrame,
+		Size: Vector3,
+		Vertices: {},
+		Faces: {}
+	) -> {
+		Transform: CFrame,
+		Size: Vector3,
+		Vertices: {},
+		Faces: {},
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type ILine = {
+	Draw: (self: ILine, Transform: CFrame, Length: number) -> (),
+	Create: (
+		self: ILine,
+		Transform: CFrame,
+		Length: number
+	) -> { Transform: CFrame, Length: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean },
+}
+
+type IVolumeCone = {
+	Draw: (self: IVolumeCone, Transform: CFrame, Radius: number, Length: number) -> (),
+	Create: (
+		self: IVolumeCone,
+		Transform: CFrame,
+		Radius: number,
+		Length: number
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IVolumeBox = {
+	Draw: (self: IVolumeBox, Transform: CFrame, Size: Vector3) -> (),
+	Create: (
+		self: IVolumeBox,
+		Transform: CFrame,
+		Size: Vector3
+	) -> { Transform: CFrame, Size: Vector3, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean },
+}
+
+type IVolumeSphere = {
+	Draw: (self: IVolumeSphere, Transform: CFrame, Radius: number) -> (),
+	Create: (
+		self: IVolumeSphere,
+		Transform: CFrame,
+		Radius: number
+	) -> { Transform: CFrame, Radius: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean },
+}
+
+type IVolumeCylinder = {
+	Draw: (self: IVolumeCylinder, Transform: CFrame, Radius: number, Length: number, InnerRadius: number?, Angle: number?) -> (),
+	Create: (
+		self: IVolumeCylinder,
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		InnerRadius: number?,
+		Angle: number?
+	) -> {
+		Transform: CFrame,
+		Radius: number,
+		Length: number,
+		InnerRadius: number?,
+		Angle: number?,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IVolumeArrow = {
+	Draw: (self: IVolumeArrow, Origin: Vector3, End: Vector3, CylinderRadius: number, ConeRadius: number, Length: number, UseCylinder: boolean?) -> (),
+	Create: (
+		self: IVolumeArrow,
+		Origin: Vector3,
+		End: Vector3,
+		CylinderRadius: number,
+		ConeRadius: number,
+		Length: number,
+		UseCylinder: boolean?
+	) -> {
+		Origin: Vector3,
+		End: Vector3,
+		CylinderRadius: number,
+		ConeRadius: number,
+		Length: number,
+		UseCylinder: boolean?,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IText = {
+	Draw: (self: IText, Origin: Vector3, Text: string, Size: number?) -> (),
+	Create: (
+		self: IText,
+		Origin: Vector3,
+		Text: string,
+		Size: number?
+	) -> {
+		Origin: Vector3,
+		Text: string,
+		Size: number?,
+		Color3: Color3,
+		AlwaysOnTop: boolean,
+		Transparency: number,
+		Enabled: boolean,
+		Destroy: boolean,
+	},
+}
+
+type IStyles = {
+	Color: string,
+	Transparency: number,
+	AlwaysOnTop: boolean,
+}
+
+type IStyle = "Color3" | "Transparency" | "AlwaysOnTop"
+
+type ICeive = {
+	ActiveRays: number,
+	ActiveInstances: number,
+
+	PushProperty: (Property: IStyle, Value: any?) -> (),
+	PopProperty: (Property: IStyle) -> any?,
+	SetStyle: (Color: Color3?, Transparency: number?, AlwaysOnTop: boolean?) -> (),
+	AddDebrisInSeconds: (Seconds: number, Callback: () -> ()) -> (),
+	AddDebrisInFrames: (Frames: number, Callback: () -> ()) -> (),
+	SetEnabled: (Value: boolean) -> (),
+	RemoveAdornments: () -> (),
+	DoCleaning: () -> (),
+	ScheduleCleaning: () -> (),
+	TweenProperies: (Properties: {}, Goal: {}, TweenInfo: TweenInfo) -> () -> (),
+	Init: () -> (),
+
+	Styles: IStyles,
+
+	Ray: IRay,
+	Line: ILine,
+	Box: IBox,
+	Plane: IPlane,
+	Wedge: IWedge,
+	Circle: ICircle,
+	Sphere: ISphere,
+	Cylinder: ICylinder,
+	Capsule: ICapsule,
+	Cone: ICone,
+	Arrow: IArrow,
+	Mesh: IMesh,
+	Text: IText,
+	VolumeCone: IVolumeCone,
+	VolumeBox: IVolumeBox,
+	VolumeSphere: IVolumeSphere,
+	VolumeCylinder: IVolumeCylinder,
+	VolumeArrow: IVolumeArrow,
+}
+
+-- Ceive
+
+--- @class CEIVE
+--- Root class for all the gizmos.
+
+local Styles = {
+	Color = "Color3",
+	Transparency = "Transparency",
+	AlwaysOnTop = "AlwaysOnTop",
+}
+
+local Ceive: ICeive = {
+	Enabled = true,
+	ActiveRays = 0,
+	ActiveInstances = 0,
+
+	Styles = Styles,
+
+	AOTWireframeHandle = AOTWireframeHandle,
+	WireframeHandle = WireframeHandle,
+}
+
+--- @within CEIVE
+--- @function GetPoolSize
+--- @return number
+function Ceive.GetPoolSize(): number
+	local n = 0
+
+	for _, t in Pool do
+		n += #t
+	end
+
+	return n
+end
+
+--- @within CEIVE
+--- @function PushProperty
+--- Push Property sets the value of a property.
+--- @param Property string
+--- @param Value any
+function Ceive.PushProperty(Property, Value)
+	PropertyTable[Property] = Value
+
+	if Property == "AlwaysOnTop" then
+		return
+	end
+
+	pcall(function()
+		AOTWireframeHandle[Property] = Value
+		WireframeHandle[Property] = Value
+	end)
+end
+
+--- @within CEIVE
+--- @function PopProperty
+--- Pop Property returns the property value.
+--- @param Property string
+--- @return any
+function Ceive.PopProperty(Property)
+	if PropertyTable[Property] then
+		return PropertyTable[Property]
+	end
+
+	return AOTWireframeHandle[Property]
+end
+
+--- @within CEIVE
+--- @function SetStyle
+--- Sets the style of all properties.
+--- @param Color Color3?
+--- @param Transparency number?
+--- @param AlwaysOnTop boolean?
+function Ceive.SetStyle(Color, Transparency, AlwaysOnTop)
+	if Color ~= nil and typeof(Color) == "Color3" then
+		Ceive.PushProperty("Color3", Color)
+	end
+
+	if Transparency ~= nil and typeof(Transparency) == "number" then
+		Ceive.PushProperty("Transparency", Transparency)
+	end
+
+	if AlwaysOnTop ~= nil and typeof(AlwaysOnTop) == "boolean" then
+		Ceive.PushProperty("AlwaysOnTop", AlwaysOnTop)
+	end
+end
+
+--- @within CEIVE
+--- @function DoCleaning
+function Ceive.DoCleaning()
+	AOTWireframeHandle:Clear()
+	WireframeHandle:Clear()
+
+	for _, Object in ActiveObjects do
+		Release(Object)
+	end
+
+	ActiveObjects = {}
+
+	Ceive.ActiveRays = 0
+	Ceive.ActiveInstances = 0
+end
+
+--- @within CEIVE
+--- @function ScheduleCleaning
+function Ceive.ScheduleCleaning()
+	if CleanerScheduled then
+		return
+	end
+
+	CleanerScheduled = true
+
+	task.delay(0, function()
+		Ceive.DoCleaning()
+
+		CleanerScheduled = false
+	end)
+end
+
+--- @within CEIVE
+--- @function AddDebrisInSeconds
+--- Acts as a wrapper for your code that runs for a provided amount of seconds.
+--- @param Seconds number
+--- @param Callback function
+function Ceive.AddDebrisInSeconds(Seconds: number, Callback)
+	table.insert(Debris, { "Seconds", Seconds, os.clock(), Callback })
+end
+
+--- @within CEIVE
+--- @function AddDebrisInFrames
+--- Acts as a wrapper for your code that runs for a provided amount of frames.
+--- @param Frames number
+--- @param Callback function
+function Ceive.AddDebrisInFrames(Frames: number, Callback)
+	table.insert(Debris, { "Frames", Frames, 0, Callback })
+end
+
+--- @within CEIVE
+--- @function TweenProperties
+--- Tweens the property table to the goal with the provided TweenInfo, returns a function which can be used to cancel.
+--- @param Properties table
+--- @param Goal table
+--- @param TweenInfo TweenInfo
+--- @return CancelFunction
+function Ceive.TweenProperties(Properties: {}, Goal: {}, TweenInfo: TweenInfo): () -> ()
+	local p_Properties = Properties
+	local c_Properties = deepCopy(Properties)
+
+	local Tween = {
+		p_Properties = p_Properties,
+		Properties = c_Properties,
+		Goal = Goal,
+		TweenInfo = TweenInfo,
+		Time = 0,
+	}
+
+	Tweens[Tween] = true
+
+	return function()
+		Tweens[Tween] = nil
+	end
+end
+
+--- @within CEIVE
+--- @function Init
+function Ceive.Init()
+	RunService.RenderStepped:Connect(function(dt)
+    	if Ceive.Enabled then
+			-- Add our gizmos if they were removed for whatever reasons
+			if not TargetParent:FindFirstChild("AOTGizmoAdornment") then
+				AOTWireframeHandle = Instance.new("WireframeHandleAdornment")
+				AOTWireframeHandle.Adornee = Terrain
+				AOTWireframeHandle.ZIndex = 1
+				AOTWireframeHandle.AlwaysOnTop = true
+				AOTWireframeHandle.Name = "AOTGizmoAdornment"
+				AOTWireframeHandle.Parent = TargetParent
+
+				Ceive.AOTWireframeHandle = AOTWireframeHandle
+			end
+
+			if not TargetParent:FindFirstChild("GizmoAdornment") then
+				WireframeHandle = Instance.new("WireframeHandleAdornment")
+				WireframeHandle.Adornee = Terrain
+				WireframeHandle.ZIndex = 1
+				WireframeHandle.AlwaysOnTop = false
+				WireframeHandle.Name = "GizmoAdornment"
+				WireframeHandle.Parent = TargetParent
+
+				Ceive.WireframeHandle = WireframeHandle
+			end
+		end
+
+		for Tween in Tweens do
+			Tween.Time += dt
+			local Alpha = Tween.Time / Tween.TweenInfo.Time
+
+			if Alpha > 1 then
+				Alpha = 1
+			end
+
+			local function LerpProperty(Start, End, Time)
+				if type(Start) == "number" then
+					return Lerp(Start, End, Time)
+				end
+
+				return Start:Lerp(End, Time)
+			end
+
+			for k, v in Tween.Properties do
+				if not Tween.Goal[k] then
+					continue
+				end
+
+				local TweenAlpha = TweenService:GetValue(Alpha, Tween.TweenInfo.EasingStyle, Tween.TweenInfo.EasingDirection)
+				local PropertyValue = LerpProperty(v, Tween.Goal[k], TweenAlpha)
+
+				Tween.p_Properties[k] = PropertyValue
+			end
+
+			if Alpha == 1 then
+				Tweens[Tween] = nil
+			end
+		end
+
+		for i = #Debris, 1, -1 do
+			local DebrisObject = Debris[i]
+			local DebrisType = DebrisObject[1]
+			local DebrisLifetime = DebrisObject[2]
+			local DebrisBirth = DebrisObject[3]
+			local DebrisCallback = DebrisObject[4]
+
+			if DebrisType == "Seconds" then
+				if os.clock() - DebrisBirth > DebrisLifetime then
+					table.remove(Debris, i)
+					continue
+				end
+
+				DebrisCallback()
+
+				continue
+			end
+
+			if DebrisBirth > DebrisLifetime then
+				table.remove(Debris, i)
+				continue
+			end
+
+			DebrisObject[2] += 1 -- Add 1 frame to the counter
+
+			DebrisCallback()
+		end
+
+		for i = #RetainObjects, 1, -1 do
+			local Gizmo = RetainObjects[i]
+			local GizmoPropertys = Gizmo[2]
+
+			if not GizmoPropertys.Enabled then
+				continue
+			end
+
+			if GizmoPropertys.Destroy then
+				table.remove(RetainObjects, i)
+			end
+
+			Gizmo[1]:Update(GizmoPropertys)
+		end
+	end)
+end
+
+--- @within CEIVE
+--- @function SetEnabled
+--- @param Value boolean
+function Ceive.SetEnabled(Value)
+	Ceive.Enabled = Value
+
+	if Value == false then
+		Ceive.DoCleaning()
+	end
+end
+
+--- @within CEIVE
+--- @function RemoveAdornments
+--- Removes adornments, will be added back next frame if Ceive is enabled
+function Ceive.RemoveAdornments()
+	if TargetParent:FindFirstChild("AOTGizmoAdornment") then
+		TargetParent:FindFirstChild("AOTGizmoAdornment"):Destroy()
+	end
+
+	if TargetParent:FindFirstChild("GizmoAdornment") then
+		TargetParent:FindFirstChild("GizmoAdornment"):Destroy()
+	end
+end
+
+-- Load Gizmos
+
+for _, Gizmo in Gizmos:GetChildren() do
+	Ceive[Gizmo.Name] = require(Gizmo).Init(Ceive, PropertyTable, Request, Release, Retain, Register)
+end
+
+return Ceive
+]]></string>
+      </Properties>
+      <Item class="Folder" referent="2">
+        <Properties>
+          <string name="Name">Gizmos</string>
+        </Properties>
+        <Item class="ModuleScript" referent="3">
+          <Properties>
+            <string name="Name">Arrow</string>
+            <string name="Source"><![CDATA[--- @class Arrow
+--- Renders a wireframe arrow.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+
+--- @within Arrow
+--- @function Draw
+--- @param Origin Vector3
+--- @param End Vector3
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+function Gizmo:Draw(Origin: Vector3, End: Vector3, Radius: number, Length: number, Subdivisions: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	Ceive.Ray:Draw(Origin, End)
+
+	local ArrowCFrame = CFrame.lookAt(End + ((Origin - End).Unit * (Length / 2)), End)
+	Ceive.Cone:Draw(ArrowCFrame, Radius, Length, Subdivisions)
+end
+
+--- @within Arrow
+--- @function Create
+--- @param Origin Vector3
+--- @param End Vector3
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+--- @return {Origin: Vector3, End: Vector3, Radius: number, Length: number, Subdivisions: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Origin: Vector3, End: Vector3, Radius: number, Length: number, Subdivisions: number)
+	local PropertyTable = {
+		Origin = Origin,
+		End = End,
+		Radius = Radius,
+		Length = Length,
+		Subdivisions = Subdivisions,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Origin, PropertyTable.End, PropertyTable.Radius, PropertyTable.Length, PropertyTable.Subdivisions)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="4">
+          <Properties>
+            <string name="Name">Box</string>
+            <string name="Source">--- @class Box
+--- Renders a wireframe box.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Box
+--- @function Draw
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param DrawTriangles boolean
+function Gizmo:Draw(Transform: CFrame, Size: Vector3, DrawTriangles: boolean)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Position = Transform.Position
+	local Uv = Transform.UpVector
+	local Rv = Transform.RightVector
+	local Lv = Transform.LookVector
+	local sO2 = Size / 2
+	local sUv = Uv * sO2.Y
+	local sRv = Rv * sO2.X
+	local sLv = Lv * sO2.Z
+
+	local function CalculateYFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv + lLv)
+		local TopRight = Position + (lUv + lRv + lLv)
+		local BottomLeft = Position + (lUv - lRv - lLv)
+		local BottomRight = Position + (lUv + lRv - lLv)
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		if DrawTriangles ~= false then
+			Ceive.Ray:Draw(TopRight, BottomLeft)
+		end
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	local function CalculateZFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv + lLv)
+		local TopRight = Position + (lUv + lRv + lLv)
+		local BottomLeft = Position + (-lUv - lRv + lLv)
+		local BottomRight = Position + (-lUv + lRv + lLv)
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		if DrawTriangles ~= false then
+			Ceive.Ray:Draw(TopRight, BottomLeft)
+		end
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	local function CalculateXFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv - lLv)
+		local TopRight = Position + (lUv - lRv + lLv)
+		local BottomLeft = Position + (-lUv - lRv - lLv)
+		local BottomRight = Position + (-lUv - lRv + lLv)
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		if DrawTriangles ~= false then
+			Ceive.Ray:Draw(TopRight, BottomLeft)
+		end
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	CalculateXFace(sUv, sRv, sLv)
+	CalculateXFace(sUv, -sRv, sLv)
+
+	CalculateYFace(sUv, sRv, sLv)
+	CalculateYFace(-sUv, sRv, sLv)
+
+	CalculateZFace(sUv, sRv, sLv)
+	CalculateZFace(sUv, sRv, -sLv)
+end
+
+--- @within Box
+--- @function Create
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param DrawTriangles boolean
+--- @return {Transform: CFrame, Size: Vector3, DrawTriangles: boolean, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Size: Vector3, DrawTriangles: boolean)
+	local PropertyTable = {
+		Transform = Transform,
+		Size = Size,
+		DrawTriangles = DrawTriangles,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Size, PropertyTable.DrawTriangles)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="5">
+          <Properties>
+            <string name="Name">Capsule</string>
+            <string name="Source">local Rad180D = math.rad(180)
+
+--- @class Capsule
+--- Renders a wireframe capsule.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Capsule
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+function Gizmo:Draw(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	-- Draw top and bottom of cylinder
+	local TopOfCylinder = Transform.Position + (Transform.UpVector * (Length / 2))
+	local BottomOfCylinder = Transform.Position - (Transform.UpVector * (Length / 2))
+
+	TopOfCylinder = CFrame.lookAt(TopOfCylinder, TopOfCylinder + Transform.UpVector)
+	BottomOfCylinder = CFrame.lookAt(BottomOfCylinder, BottomOfCylinder - Transform.UpVector)
+
+	-- Draw Cylinder Lines
+
+	local AnglePerChunk = math.floor(360 / Subdivisions)
+
+	local LastTop
+	local LastBottom
+
+	local FirstTop
+	local FirstBottom
+
+	for i = 0, 360, AnglePerChunk do
+		local XMagnitude = math.sin(math.rad(i)) * Radius
+		local YMagnitude = math.cos(math.rad(i)) * Radius
+
+		local VertexOffset = (Transform.LookVector * YMagnitude) + (Transform.RightVector * XMagnitude)
+		local TopVertexPosition = TopOfCylinder.Position + VertexOffset
+		local BottomVertexPosition = BottomOfCylinder.Position + VertexOffset
+
+		Ceive.Ray:Draw(TopVertexPosition, BottomVertexPosition)
+
+		Ceive.Circle:Draw(CFrame.new(TopOfCylinder.Position) * Transform.Rotation * CFrame.Angles(0, math.rad(i), 0), Radius, Subdivisions / 2, 90, false)
+		Ceive.Circle:Draw(CFrame.new(BottomOfCylinder.Position) * Transform.Rotation * CFrame.Angles(Rad180D, math.rad(i), 0), Radius, Subdivisions / 2, 90, false)
+
+		if not LastTop then
+			LastTop = TopVertexPosition
+			LastBottom = BottomVertexPosition
+
+			FirstTop = TopVertexPosition
+			FirstBottom = BottomVertexPosition
+
+			continue
+		end
+
+		Ceive.Ray:Draw(LastTop, TopVertexPosition)
+		Ceive.Ray:Draw(LastBottom, BottomVertexPosition)
+
+		LastTop = TopVertexPosition
+		LastBottom = BottomVertexPosition
+	end
+
+	Ceive.Ray:Draw(LastTop, FirstTop)
+	Ceive.Ray:Draw(LastBottom, FirstBottom)
+end
+
+--- @within Capsule
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+--- @return {Transform: CFrame, Radius: number, Length: number, Subdivisions: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Length = Length,
+		Subdivisions = Subdivisions,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Length, PropertyTable.Subdivisions)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="6">
+          <Properties>
+            <string name="Name">Circle</string>
+            <string name="Source">--- @class Circle
+--- Renders a wireframe Circle.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Circle
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Subdivisions number
+--- @param Angle number
+--- @param ConnectToStart boolean?
+function Gizmo:Draw(Transform: CFrame, Radius: number, Subdivisions: number, Angle: number, ConnectToStart: boolean?)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local AnglePerChunk = math.floor(Angle / Subdivisions)
+
+	local PreviousVertex = nil
+	local FirstVertex = nil
+
+	local FinishingAngle = 0
+
+	for i = 0, Angle, AnglePerChunk do
+		local XMagnitude = math.sin(math.rad(i)) * Radius
+		local YMagnitude = math.cos(math.rad(i)) * Radius
+
+		local VertexPosition = Transform.Position + ((Transform.UpVector * YMagnitude) + (Transform.RightVector * XMagnitude))
+
+		if PreviousVertex == nil then
+			PreviousVertex = VertexPosition
+			FirstVertex = VertexPosition
+			FinishingAngle = i
+			continue
+		end
+
+		Ceive.Ray:Draw(PreviousVertex, VertexPosition)
+		PreviousVertex = VertexPosition
+		FinishingAngle = i
+	end
+
+	if FinishingAngle ~= Angle then
+		local XMagnitude = math.sin(math.rad(Angle)) * Radius
+		local YMagnitude = math.cos(math.rad(Angle)) * Radius
+
+		local VertexPosition = Transform.Position + ((Transform.UpVector * YMagnitude) + (Transform.RightVector * XMagnitude))
+
+		Ceive.Ray:Draw(PreviousVertex, VertexPosition)
+	end
+
+	if ConnectToStart ~= false then
+		Ceive.Ray:Draw(PreviousVertex, FirstVertex)
+	end
+
+	return PreviousVertex
+end
+
+--- @within Circle
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Subdivisions number
+--- @param Angle number
+--- @param ConnectToStart boolean?
+--- @return {Transform: CFrame, Radius: number, Subdivisions: number, Angle: number, ConnectToStart: boolean?, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Subdivisions: number, Angle: number, ConnectToStart: boolean?)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Subdivisions = Subdivisions,
+		Angle = Angle,
+		ConnectToStart = ConnectToStart,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Subdivisions, PropertyTable.Angle, PropertyTable.ConnectToStart)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="7">
+          <Properties>
+            <string name="Name">Cone</string>
+            <string name="Source">local Rad90D = math.rad(90)
+
+--- @class Cone
+--- Renders a wireframe cone.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Cone
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+function Gizmo:Draw(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	Transform *= CFrame.Angles(-Rad90D, 0, 0)
+
+	local TopOfCone = Transform.Position + Transform.UpVector * (Length / 2)
+	local BottomOfCone = Transform.Position + -Transform.UpVector * (Length / 2)
+
+	TopOfCone = CFrame.lookAt(TopOfCone, TopOfCone + Transform.UpVector)
+	BottomOfCone = CFrame.lookAt(BottomOfCone, BottomOfCone - Transform.UpVector)
+
+	local AnglePerChunk = math.floor(360 / Subdivisions)
+
+	local Last
+	local First
+
+	for i = 0, 360, AnglePerChunk do
+		local XMagnitude = math.sin(math.rad(i)) * Radius
+		local YMagnitude = math.cos(math.rad(i)) * Radius
+
+		local VertexOffset = (Transform.LookVector * YMagnitude) + (Transform.RightVector * XMagnitude)
+		local VertexPosition = BottomOfCone.Position + VertexOffset
+
+		if not Last then
+			Last = VertexPosition
+			First = VertexPosition
+
+			Ceive.Ray:Draw(VertexPosition, TopOfCone.Position)
+
+			continue
+		end
+
+		Ceive.Ray:Draw(VertexPosition, TopOfCone.Position)
+		Ceive.Ray:Draw(Last, VertexPosition)
+
+		Last = VertexPosition
+	end
+
+	Ceive.Ray:Draw(Last, First)
+end
+
+--- @within Cone
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+--- @return {Transform: CFrame, Radius: number, Length: number, Subdivisions: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Length = Length,
+		Subdivisions = Subdivisions,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Length, PropertyTable.Subdivisions)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="8">
+          <Properties>
+            <string name="Name">Cylinder</string>
+            <string name="Source">--- @class Cylinder
+--- Renders a wireframe cylinder.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Cylinder
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+function Gizmo:Draw(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	-- Draw top and bottom of cylinder
+	local TopOfCylinder = Transform.Position + (Transform.UpVector * (Length / 2))
+	local BottomOfCylinder = Transform.Position - (Transform.UpVector * (Length / 2))
+
+	TopOfCylinder = CFrame.lookAt(TopOfCylinder, TopOfCylinder + Transform.UpVector)
+	BottomOfCylinder = CFrame.lookAt(BottomOfCylinder, BottomOfCylinder - Transform.UpVector)
+
+	-- Draw Cylinder Lines
+
+	local AnglePerChunk = math.floor(360 / Subdivisions)
+
+	local LastTop
+	local LastBottom
+
+	local FirstTop
+	local FirstBottom
+
+	for i = 0, 360, AnglePerChunk do
+		local XMagnitude = math.sin(math.rad(i)) * Radius
+		local YMagnitude = math.cos(math.rad(i)) * Radius
+
+		local VertexOffset = (Transform.LookVector * YMagnitude) + (Transform.RightVector * XMagnitude)
+		local TopVertexPosition = TopOfCylinder.Position + VertexOffset
+		local BottomVertexPosition = BottomOfCylinder.Position + VertexOffset
+
+		Ceive.Ray:Draw(TopVertexPosition, BottomVertexPosition)
+
+		if not LastTop then
+			LastTop = TopVertexPosition
+			LastBottom = BottomVertexPosition
+
+			FirstTop = TopVertexPosition
+			FirstBottom = BottomVertexPosition
+
+			continue
+		end
+
+		Ceive.Ray:Draw(LastTop, TopVertexPosition)
+		Ceive.Ray:Draw(LastBottom, BottomVertexPosition)
+
+		LastTop = TopVertexPosition
+		LastBottom = BottomVertexPosition
+	end
+
+	Ceive.Ray:Draw(LastTop, FirstTop)
+	Ceive.Ray:Draw(LastBottom, FirstBottom)
+end
+
+--- @within Cylinder
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param Subdivisions number
+--- @return {Transform: CFrame, Radius: number, Length: number, Subdivisions: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Length: number, Subdivisions: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Length = Length,
+		Subdivisions = Subdivisions,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Length, PropertyTable.Subdivisions)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="9">
+          <Properties>
+            <string name="Name">Line</string>
+            <string name="Source"><![CDATA[--- @class Line
+--- Renders a line at a given CFrame.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Line
+--- @function Draw
+--- @param Transform CFrame
+--- @param Length number
+function Gizmo:Draw(Transform: CFrame, Length: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Origin = Transform.Position + (Transform.LookVector * (-Length / 2))
+    local End = Transform.Position + (Transform.LookVector * (Length / 2))
+
+    Ceive.Ray:Draw(Origin, End)
+end
+
+--- @within Line
+--- @function Create
+--- @param Transform CFrame
+--- @param Length number
+--- @return {Transform: CFrame, Length: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number}
+function Gizmo:Create(Transform: CFrame, Length: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Length = Length,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Length)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="10">
+          <Properties>
+            <string name="Name">Mesh</string>
+            <string name="Source">local function Map(n, start, stop, newStart, newStop)
+	return ((n - start) / (stop - start)) * (newStop - newStart) + newStart
+end
+
+--- @class Mesh
+--- Renders a wireframe mesh.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Mesh
+--- @function Draw
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param Vertices table
+--- @param Faces table
+function Gizmo:Draw(Transform: CFrame, Size: Vector3, Vertices, Faces)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local maxX = -math.huge
+	local maxY = -math.huge
+	local maxZ = -math.huge
+
+	local minX = math.huge
+	local minY = math.huge
+	local minZ = math.huge
+
+	for _, vertex in Vertices do
+		maxX = math.max(maxX, vertex.x)
+		maxY = math.max(maxY, vertex.y)
+		maxZ = math.max(maxZ, vertex.z)
+
+		minX = math.min(minX, vertex.x)
+		minY = math.min(minY, vertex.y)
+		minZ = math.min(minZ, vertex.z)
+	end
+
+	for i, vertex in Vertices do
+		local vX = Map(vertex.x, minX, maxX, -0.5, 0.5)
+		local vY = Map(vertex.y, minY, maxY, -0.5, 0.5)
+		local vZ = Map(vertex.z, minZ, maxZ, -0.5, 0.5)
+
+		local vertexCFrame = Transform * CFrame.new(Vector3.new(vX, vY, vZ) * Size)
+		Vertices[i] = vertexCFrame
+	end
+
+	for _, face in Faces do
+		if #face == 3 then
+			local vCF1 = Vertices[face[1].v]
+			local vCF2 = Vertices[face[2].v]
+			local vCF3 = Vertices[face[3].v]
+
+			Ceive.Ray:Draw(vCF1.Position, vCF2.Position)
+			Ceive.Ray:Draw(vCF2.Position, vCF3.Position)
+			Ceive.Ray:Draw(vCF3.Position, vCF1.Position)
+		else
+			local vCF1 = Vertices[face[1].v]
+			local vCF2 = Vertices[face[2].v]
+			local vCF3 = Vertices[face[3].v]
+			local vCF4 = Vertices[face[4].v]
+
+			Ceive.Ray:Draw(vCF1.Position, vCF2.Position)
+			Ceive.Ray:Draw(vCF1.Position, vCF4.Position)
+			Ceive.Ray:Draw(vCF4.Position, vCF2.Position)
+
+			Ceive.Ray:Draw(vCF3.Position, vCF4.Position)
+			Ceive.Ray:Draw(vCF2.Position, vCF3.Position)
+		end
+	end
+end
+
+--- @within Mesh
+--- @function Create
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param Vertices table
+--- @param Faces table
+--- @return {Transform: CFrame, Size: Vector3, Vertices: {}, Faces: {}, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Size: Vector3, Vertices, Faces)
+	local PropertyTable = {
+		Transform = Transform,
+		Size = Size,
+		Vertices = Vertices,
+		Faces = Faces,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Size, PropertyTable.Vertices, PropertyTable.Faces)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="11">
+          <Properties>
+            <string name="Name">Plane</string>
+            <string name="Source">--- @class Plane
+--- Renders a wireframe plane.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Plane
+--- @function Draw
+--- @param Position Vector3
+--- @param Normal Vector3
+--- @param Size Vector3
+function Gizmo:Draw(Position: Vector3, Normal: Vector3, Size: Vector3)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+    Size *= Vector3.new(1, 1, 0)
+
+    local Transform = CFrame.lookAt(Position, Position + Normal)
+
+	local Uv = Transform.UpVector
+	local Rv = Transform.RightVector
+	local Lv = Transform.LookVector
+	local sO2 = Size / 2
+	local sUv = Uv * sO2.Y
+	local sRv = Rv * sO2.X
+	local sLv = Lv * sO2.Z
+
+	local function CalculateZFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv + lLv)
+		local TopRight = Position + (lUv + lRv + lLv)
+		local BottomLeft = Position + (-lUv - lRv + lLv)
+		local BottomRight = Position + (-lUv + lRv + lLv)
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		Ceive.Ray:Draw(TopRight, BottomLeft)
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	CalculateZFace(sUv, sRv, sLv)
+end
+
+--- @within Plane
+--- @function Create
+--- @param Position Vector3
+--- @param Normal Vector3
+--- @param Size Vector3
+--- @return {Position: Vector3, Normal: Vector3, Size: Vector3, DrawTriangles: boolean, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Position: Vector3, Normal: Vector3, Size: Vector3)
+	local PropertyTable = {
+		Position = Position,
+		Normal = Normal,
+        Size = Size,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Position, PropertyTable.Normal, PropertyTable.Size)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="12">
+          <Properties>
+            <string name="Name">Ray</string>
+            <string name="Source">--- @class Ray
+--- Renders a line between two points.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+	
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	
+	return self
+end
+
+--- @within Ray
+--- @function Draw
+--- @param Origin Vector3
+--- @param End Vector3
+function Gizmo:Draw(Origin: Vector3, End: Vector3)
+	local Ceive = self.Ceive
+	
+	if not Ceive.Enabled then
+		return
+	end
+	
+	if self.Propertys.AlwaysOnTop then
+		Ceive.AOTWireframeHandle:AddLine(Origin, End)
+	else
+		Ceive.WireframeHandle:AddLine(Origin, End)
+	end
+	
+	self.Ceive.ActiveRays += 1
+	
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within Ray
+--- @function Create
+--- @param Origin Vector3
+--- @param End Vector3
+--- @return {Origin: Vector3, End: Vector3, Color3: Color3, AlwaysOnTop: boolean, Transparency: number}
+function Gizmo:Create(Origin: Vector3, End: Vector3)
+	local PropertyTable = {
+		Origin = Origin,
+		End = End,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+	
+	self.Retain(self, PropertyTable)
+	
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+	
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+	
+	self:Draw(PropertyTable.Origin, PropertyTable.End)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="13">
+          <Properties>
+            <string name="Name">Sphere</string>
+            <string name="Source">local Rad90D = math.rad(90)
+
+--- @class Sphere
+--- Renders a wireframe sphere.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Sphere
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Subdivisions number
+--- @param Angle number
+function Gizmo:Draw(Transform: CFrame, Radius: number, Subdivisions: number, Angle: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	Ceive.Circle:Draw(Transform, Radius, Subdivisions, Angle)
+	Ceive.Circle:Draw(Transform * CFrame.Angles(0, Rad90D, 0), Radius, Subdivisions, Angle)
+	Ceive.Circle:Draw(Transform * CFrame.Angles(Rad90D, 0, 0), Radius, Subdivisions, Angle)
+end
+
+--- @within Sphere
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Subdivisions number
+--- @param Angle number
+--- @return {Transform: CFrame, Radius: number, Subdivisions: number, Angle: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Subdivisions: number, Angle: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Subdivisions = Subdivisions,
+		Angle = Angle,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Subdivisions, PropertyTable.Angle)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="14">
+          <Properties>
+            <string name="Name">Text</string>
+            <string name="Source"><![CDATA[local DROP_SHADOW = true
+local OFFSET_PERCENTAGE = 0.00175
+
+local Camera = workspace.CurrentCamera
+
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+function Gizmo:Draw(Origin: Vector3, Text: string, Size: number?)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	if self.Propertys.AlwaysOnTop then
+		if DROP_SHADOW then
+			local DistanceToCamera = (Origin - Camera.CFrame.Position).Magnitude
+			local PrevColor = Ceive.PopProperty("Color3")
+
+			Ceive.PushProperty("Color3", Color3.new())
+			local Offset = -(Vector3.xAxis + Vector3.yAxis).Unit
+			Ceive.AOTWireframeHandle:AddText(Origin + Offset * (DistanceToCamera * OFFSET_PERCENTAGE), Text, Size)
+			Ceive.PushProperty("Color3", PrevColor)
+		end
+
+		Ceive.AOTWireframeHandle:AddText(Origin, Text, Size)
+	else
+		if DROP_SHADOW then
+			local DistanceToCamera = (Origin - Camera.CFrame.Position).Magnitude
+			local PrevColor = Ceive.PopProperty("Color3")
+
+			Ceive.PushProperty("Color3", Color3.new())
+			local Offset = -(Vector3.xAxis + Vector3.yAxis).Unit
+			Ceive.WireframeHandle:AddText(Origin + Offset * (DistanceToCamera * OFFSET_PERCENTAGE), Text, Size)
+			Ceive.PushProperty("Color3", PrevColor)
+		end
+
+		Ceive.WireframeHandle:AddText(Origin, Text, Size)
+	end
+
+	-- Should text count to active rays?
+	--self.Ceive.ActiveRays += 1
+
+	self.Ceive.ScheduleCleaning()
+end
+
+function Gizmo:Create(Origin: Vector3, Text: string, Size: number?)
+	local PropertyTable = {
+		Origin = Origin,
+		Text = Text,
+		Size = Size,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Origin, PropertyTable.Text, PropertyTable.Size)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="15">
+          <Properties>
+            <string name="Name">VolumeArrow</string>
+            <string name="Source"><![CDATA[--- @class VolumeArrow
+--- Renders an arrow with a ConeHandleAdornment instead of a wireframe cone.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain, Register)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	self.Register = Register
+
+	return self
+end
+
+--- @within VolumeArrow
+--- @function Draw
+--- @param Origin Vector3
+--- @param End Vector3
+--- @param CylinderRadius number
+--- @param ConeRadius number
+--- @param Length number
+--- @param UseCylinder boolean?
+function Gizmo:Draw(Origin: Vector3, End: Vector3, CylinderRadius: number, ConeRadius: number, Length: number, UseCylinder: boolean?)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local ArrowCFrame = CFrame.lookAt(End - (End - Origin).Unit * (Length / 2), End)
+
+	if UseCylinder == true then
+		local BottomCone = ArrowCFrame.Position
+		local CylinderLength = (BottomCone - Origin).Magnitude
+		local CylinderCFrame = CFrame.lookAt( (Origin + BottomCone) / 2, End )
+
+		Ceive.VolumeCylinder:Draw(CylinderCFrame, CylinderRadius, CylinderLength)
+	else
+		Ceive.Ray:Draw(Origin, End)
+	end
+
+	Ceive.VolumeCone:Draw(ArrowCFrame, ConeRadius, Length)
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within VolumeArrow
+--- @function Create
+--- @param Origin Vector3
+--- @param End Vector3
+--- @param CylinderRadius number
+--- @param ConeRadius number
+--- @param Length number
+--- @param UseCylinder boolean?
+--- @return {Origin: Vector3, End: Vector3, CylinderRadius: number, ConeRadius: number, Length: number,  UseCylinder: boolean?, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Origin: Vector3, End: Vector3, CylinderRadius: number, ConeRadius: number, Length: number, UseCylinder: boolean?)
+	local PropertyTable = {
+		Origin = Origin,
+		End = End,
+		CylinderRadius = CylinderRadius,
+		ConeRadius = ConeRadius,
+		Length = Length,
+		UseCylinder = UseCylinder,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Origin, PropertyTable.End, PropertyTable.Radius, PropertyTable.Length, PropertyTable.UseCylinder)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="16">
+          <Properties>
+            <string name="Name">VolumeBox</string>
+            <string name="Source"><![CDATA[local Terrain = workspace.Terrain
+
+--- @class VolumeBox
+--- Renders a BoxHandleAdornment.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain, Register)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	self.Register = Register
+
+	return self
+end
+
+--- @within VolumeBox
+--- @function Draw
+--- @param Transform CFrame
+--- @param Size Vector3
+function Gizmo:Draw(Transform: CFrame, Size: Vector3)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Box = self.Request("BoxHandleAdornment")
+	Box.Color3 = self.Propertys.Color3
+	Box.Transparency = self.Propertys.Transparency
+
+	Box.CFrame = Transform
+	Box.Size = Size
+	Box.AlwaysOnTop = self.Propertys.AlwaysOnTop
+	Box.ZIndex = 1
+	Box.Adornee = Terrain
+	Box.Parent = Terrain
+
+	Ceive.ActiveInstances += 1
+
+	self.Register(Box)
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within VolumeBox
+--- @function Create
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @return {Transform: CFrame, Size: Vector3, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Size: Vector3)
+	local PropertyTable = {
+		Transform = Transform,
+		Size = Size,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Size)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="17">
+          <Properties>
+            <string name="Name">VolumeCone</string>
+            <string name="Source"><![CDATA[local Terrain = workspace.Terrain
+
+--- @class VolumeCone
+--- Renders a ConeHandleAdornment.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain, Register)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	self.Register = Register
+
+	return self
+end
+
+--- @within VolumeCone
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+function Gizmo:Draw(Transform: CFrame, Radius: number, Length: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Cone = self.Request("ConeHandleAdornment")
+	Cone.Color3 = self.Propertys.Color3
+	Cone.Transparency = self.Propertys.Transparency
+
+	Cone.CFrame = Transform
+	Cone.AlwaysOnTop = self.Propertys.AlwaysOnTop
+	Cone.ZIndex = 1
+	Cone.Height = Length
+	Cone.Radius = Radius
+	Cone.Adornee = Terrain
+	Cone.Parent = Terrain
+
+	Ceive.ActiveInstances += 1
+
+	self.Register(Cone)
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within VolumeCone
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @return {Transform: CFrame, Radius: number, Length: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Length: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Length = Length,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Length)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="18">
+          <Properties>
+            <string name="Name">VolumeCylinder</string>
+            <string name="Source"><![CDATA[local Terrain = workspace.Terrain
+
+--- @class VolumeCylinder
+--- Renders a CylinderHandleAdornment.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain, Register)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	self.Register = Register
+
+	return self
+end
+
+--- @within VolumeCylinder
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param InnerRadius number?
+--- @param Angle number?
+function Gizmo:Draw(Transform: CFrame, Radius: number, Length: number, InnerRadius: number?, Angle: number?)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Cylinder = self.Request("CylinderHandleAdornment")
+	Cylinder.Color3 = self.Propertys.Color3
+	Cylinder.Transparency = self.Propertys.Transparency
+
+	Cylinder.CFrame = Transform
+	Cylinder.Height = Length
+	Cylinder.Radius = Radius
+	Cylinder.InnerRadius = InnerRadius or 0
+	Cylinder.Angle = Angle or 360
+	Cylinder.AlwaysOnTop = self.Propertys.AlwaysOnTop
+	Cylinder.ZIndex = 1
+	Cylinder.Adornee = Terrain
+	Cylinder.Parent = Terrain
+
+	Ceive.ActiveInstances += 1
+
+	self.Register(Cylinder)
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within VolumeCylinder
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @param Length number
+--- @param InnerRadius number?
+--- @param Angle number?
+--- @return {Transform: CFrame, Radius: number, Length: number, InnerRadius: number?, Angle: number?, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number, Length: number, InnerRadius: number?, Angle: number?)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		Length = Length,
+		InnerRadius = InnerRadius or 0,
+		Angle = Angle or 360,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius, PropertyTable.Length, PropertyTable.InnerRadius, PropertyTable.Angle)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">VolumeSphere</string>
+            <string name="Source"><![CDATA[local Terrain = workspace.Terrain
+
+--- @class VolumeSphere
+--- Renders a SphereHandleAdornment.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain, Register)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+	self.Register = Register
+
+	return self
+end
+
+--- @within VolumeSphere
+--- @function Draw
+--- @param Transform CFrame
+--- @param Radius number
+function Gizmo:Draw(Transform: CFrame, Radius: number)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Sphere = self.Request("SphereHandleAdornment")
+	Sphere.Color3 = self.Propertys.Color3
+	Sphere.Transparency = self.Propertys.Transparency
+
+	Sphere.CFrame = Transform
+	Sphere.Radius = Radius
+	Sphere.AlwaysOnTop = self.Propertys.AlwaysOnTop
+	Sphere.ZIndex = 1
+	Sphere.Adornee = Terrain
+	Sphere.Parent = Terrain
+
+	Ceive.ActiveInstances += 1
+
+	self.Register(Sphere)
+	self.Ceive.ScheduleCleaning()
+end
+
+--- @within VolumeSphere
+--- @function Create
+--- @param Transform CFrame
+--- @param Radius number
+--- @return {Transform: CFrame, Radius: number, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Radius: number)
+	local PropertyTable = {
+		Transform = Transform,
+		Radius = Radius,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Radius)
+end
+
+return Gizmo
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="20">
+          <Properties>
+            <string name="Name">Wedge</string>
+            <string name="Source">--- @class Wedge
+--- Renders a wireframe wedge.
+local Gizmo = {}
+Gizmo.__index = Gizmo
+
+function Gizmo.Init(Ceive, Propertys, Request, Release, Retain)
+	local self = setmetatable({}, Gizmo)
+
+	self.Ceive = Ceive
+	self.Propertys = Propertys
+	self.Request = Request
+	self.Release = Release
+	self.Retain = Retain
+
+	return self
+end
+
+--- @within Wedge
+--- @function Draw
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param DrawTriangles boolean?
+function Gizmo:Draw(Transform: CFrame, Size: Vector3, DrawTriangles: boolean)
+	local Ceive = self.Ceive
+
+	if not Ceive.Enabled then
+		return
+	end
+
+	local Position = Transform.Position
+	local Uv = Transform.UpVector
+	local Rv = Transform.RightVector
+	local Lv = Transform.LookVector
+	local sO2 = Size / 2
+	local sUv = Uv * sO2.Y
+	local sRv = Rv * sO2.X
+	local sLv = Lv * sO2.Z
+
+	local YTopLeft
+	local YTopRight
+
+	local ZBottomLeft
+	local ZBottomRight
+
+	local function CalculateYFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv + lLv)
+		local TopRight = Position + (lUv + lRv + lLv)
+		local BottomLeft = Position + (lUv - lRv - lLv)
+		local BottomRight = Position + (lUv + lRv - lLv)
+
+		YTopLeft = TopLeft
+		YTopRight = TopRight
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		if DrawTriangles ~= false then
+			Ceive.Ray:Draw(TopRight, BottomLeft)
+		end
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	local function CalculateZFace(lUv, lRv, lLv)
+		local TopLeft = Position + (lUv - lRv + lLv)
+		local TopRight = Position + (lUv + lRv + lLv)
+		local BottomLeft = Position + (-lUv - lRv + lLv)
+		local BottomRight = Position + (-lUv + lRv + lLv)
+
+		ZBottomLeft = TopLeft
+		ZBottomRight = TopRight
+
+		Ceive.Ray:Draw(TopLeft, TopRight)
+		Ceive.Ray:Draw(TopLeft, BottomLeft)
+
+		Ceive.Ray:Draw(TopRight, BottomRight)
+		if DrawTriangles ~= false then
+			Ceive.Ray:Draw(TopRight, BottomLeft)
+		end
+
+		Ceive.Ray:Draw(BottomLeft, BottomRight)
+	end
+
+	CalculateYFace(-sUv, sRv, sLv)
+
+	CalculateZFace(sUv, sRv, -sLv)
+
+	Ceive.Ray:Draw(YTopLeft, ZBottomLeft)
+	Ceive.Ray:Draw(YTopRight, ZBottomRight)
+	if DrawTriangles ~= false then
+		Ceive.Ray:Draw(YTopRight, ZBottomLeft)
+	end
+end
+
+--- @within Wedge
+--- @function Create
+--- @param Transform CFrame
+--- @param Size Vector3
+--- @param DrawTriangles boolean?
+--- @return {Transform: CFrame, Size: Vector3, DrawTriangles: boolean, Color3: Color3, AlwaysOnTop: boolean, Transparency: number, Enabled: boolean, Destroy: boolean}
+function Gizmo:Create(Transform: CFrame, Size: Vector3, DrawTriangles: boolean)
+	local PropertyTable = {
+		Transform = Transform,
+		Size = Size,
+		DrawTriangles = DrawTriangles,
+		AlwaysOnTop = self.Propertys.AlwaysOnTop,
+		Transparency = self.Propertys.Transparency,
+		Color3 = self.Propertys.Color3,
+		Enabled = true,
+		Destroy = false,
+	}
+
+	self.Retain(self, PropertyTable)
+
+	return PropertyTable
+end
+
+function Gizmo:Update(PropertyTable)
+	local Ceive = self.Ceive
+
+	Ceive.PushProperty("AlwaysOnTop", PropertyTable.AlwaysOnTop)
+	Ceive.PushProperty("Transparency", PropertyTable.Transparency)
+	Ceive.PushProperty("Color3", PropertyTable.Color3)
+
+	self:Draw(PropertyTable.Transform, PropertyTable.Size, PropertyTable.DrawTriangles)
+end
+
+return Gizmo</string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+</roblox>

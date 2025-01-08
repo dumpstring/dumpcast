@@ -238,7 +238,7 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 	return res
 end
 
-function Caster:Boxcast(transform: CFrame, size: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -247,12 +247,7 @@ function Caster:Boxcast(transform: CFrame, size: Vector3, direction: Vector3, ra
 		end
 	end
 
-	local castpart = Instance.new("Part")
-	castpart.CFrame = transform
-	castpart.Size = size
-
-	local res = (self.World :: WorldRoot):Shapecast(castpart, direction, rayparams)
-	castpart:Destroy()
+	local res = (self.World :: WorldRoot):Blockcast(transform, size, direction, rayparams)
 
 	if overrideconfig.VisualizeCast then
 		local data = {
