@@ -265,6 +265,8 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 		}
 		table.insert(rendering, data)
 	end
+
+	return res
 end
 
 function Caster:Circlecast(origin: Vector3, radius: number, points: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
