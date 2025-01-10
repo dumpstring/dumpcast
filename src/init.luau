@@ -483,6 +483,8 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 end
 
 function dumpcast.new(world: WorldRoot?, config: config?): typeof(Caster)
+	world = world or game:GetService("Workspace")
+
 	if not config then
 		config = table.clone(configbase)
 	else
