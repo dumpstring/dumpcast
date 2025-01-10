@@ -1,6 +1,3 @@
-# Project place file
-/dumpcast.rbxlx
-
-# Roblox Studio lock files
-/*.rbxlx.lock
-/*.rbxl.lock
+# Project file
+/dumpcast.rbxmx
+/dumpcast.rbxm

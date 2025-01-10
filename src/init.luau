@@ -185,7 +185,7 @@ function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastP
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -218,7 +218,7 @@ function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, 
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -252,7 +252,7 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -286,7 +286,7 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -321,7 +321,7 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -375,7 +375,7 @@ function Caster:Cylindercast(transform: CFrame, height: number, radius: number, 
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
@@ -423,7 +423,7 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 		end
 	end
 
-	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] and overrideconfig.VisualizeCast then
 		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
 			render(overrideconfig.VisRenderSignal)
 		end)
