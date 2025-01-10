@@ -1,6 +1,7 @@
 --!native
 
 local Ceive = require(script.Ceive)
+local RunService = game:GetService("RunService")
 
 local rendering : {{
 	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast" | "cylindercast",
@@ -16,6 +17,8 @@ local rendering : {{
 	config: config,
 }} = {}
 
+local renderConnections : {[RBXScriptSignal]: RBXScriptConnection} = {}
+
 export type config = {
 	VisualizeCast: boolean,
 	VisLifetime: number,
@@ -23,6 +26,8 @@ export type config = {
 	VisArrowSize: number,
 	VisShapeQuality: number,
 	VisNormalPlaneSize: number,
+
+	VisRenderSignal: RBXScriptSignal,
 
 	FailColor: Color3,
 	SuccessColor: Color3,
@@ -36,14 +41,20 @@ local configbase : config = {
 	VisArrowSize = 0.25,
 	VisShapeQuality = 12,
 	VisNormalPlaneSize = 1,
+	
+	VisRenderSignal = if RunService:IsServer() then RunService.Heartbeat else RunService.RenderStepped,
 
 	FailColor = Color3.new(1, 0, 0),
 	SuccessColor = Color3.new(0, 1, 0)
 }
 
 
-local function render()
+local function render(event: RBXScriptSignal)
 	for i, v in ipairs(rendering) do
+		if v.config.VisRenderSignal ~= event then
+			continue
+		end
+
 		if v.framesrendered > v.config.VisLifetime then
 			table.remove(rendering, table.find(rendering, v))
 			continue
@@ -170,6 +181,12 @@ function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastP
 		end
 	end
 
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
+	end
+
 	local res = (self.World :: WorldRoot):Raycast(origin, direction, rayparams)
 
 	if overrideconfig and overrideconfig.VisualizeCast then
@@ -193,6 +210,12 @@ function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, 
 		for i, v in pairs(overrideconfig) do
 			overrideconfig[i] = v
 		end
+	end
+
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
 	end
 
 	local res = (self.World :: WorldRoot):Spherecast(origin, radius, direction, rayparams)
@@ -221,6 +244,12 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 		end
 	end
 
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
+	end
+
 	local res = (self.World :: WorldRoot):Shapecast(part, direction, rayparams)
 
 	if overrideconfig and overrideconfig.VisualizeCast then
@@ -245,6 +274,12 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 		for i, v in pairs(overrideconfig) do
 			overrideconfig[i] = v
 		end
+	end
+
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
 	end
 
 	local res = (self.World :: WorldRoot):Blockcast(transform, size, direction, rayparams)
@@ -272,6 +307,12 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 		for i, v in pairs(overrideconfig) do
 			overrideconfig[i] = v
 		end
+	end
+
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
 	end
 
 	local angleStep = 2 * math.pi / points
@@ -320,6 +361,12 @@ function Caster:Cylindercast(transform: CFrame, height: number, radius: number, 
 		end
 	end
 
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
+	end
+
 	local cylinderPart = Instance.new("Part")
 	cylinderPart.Shape = Enum.PartType.Cylinder
 	cylinderPart.Size = Vector3.new(height, radius * 2, radius * 2)
@@ -358,6 +405,12 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 		for i, v in pairs(overrideconfig) do
 			overrideconfig[i] = v
 		end
+	end
+
+	if overrideconfig and not renderConnections[overrideconfig.VisRenderSignal] then
+		renderConnections[overrideconfig.VisRenderSignal] = overrideconfig.VisRenderSignal:Connect(function()
+			render(overrideconfig.VisRenderSignal)
+		end)
 	end
 
 	local halfHeight = height / 2
@@ -421,7 +474,7 @@ function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
 		end
 		config = b
 	end
-	local self = setmetatable({}, {__index = Caster})
+	local self = setmetatable({}, {__index = Caster, __tostring = "dumpcast/Caster"})
 
 	self.World = world
 	self.Config = config
@@ -429,44 +482,12 @@ function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
 	return self
 end
 
-local dumpcastsignal = if game:GetService("RunService"):IsServer() then game:GetService("RunService").Heartbeat else game:GetService("RunService").RenderStepped
-local dumpcastrender = dumpcastsignal:Connect(render)
-
 setmetatable(dumpcast, {
-	__index = function(self, index)
-		if index == "StepSignal" then
-			return dumpcastsignal
-		end
-		return
-	end,
-	__newindex = function(self, index, value)
-		if index == "StepSignal" then
-			local isSignal = false
-			if typeof(value) == "RBXScriptSignal" then
-				isSignal = true
-			else
-				local s, val = pcall(function()
-					return type(value["Connect"]) == "function"
-				end)
-
-				isSignal = s and val
-			end
-			
-			assert(isSignal, "invalid signal provided for property StepSignal of dumpcast.")
-
-			dumpcastrender:Disconnect()
-			dumpcastsignal = value
-			dumpcastrender = dumpcastsignal:Connect(render)
-			return
-		end
-		rawset(dumpcast, index, value)
-	end,
 	__tostring = "dumpcast"
 })
 
 export type dumpcast = {
 	new: (world: WorldRoot, config: config?) -> typeof(Caster),
-	StepSignal: RBXScriptSignal,
 }
 
 return (dumpcast :: typeof(dumpcast) & dumpcast)
