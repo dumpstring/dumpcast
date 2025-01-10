@@ -12,6 +12,8 @@ get the latest release from:
 
 ## usage
 
+note: raycast visualizations on on server are not replicated to client.
+
 ```lua
 local dumpcast = require(path.to.dumpcast)
 local Caster = dumpcast.new(workspace)

@@ -4,7 +4,7 @@ local Ceive = require(script.Ceive)
 local RunService = game:GetService("RunService")
 
 local rendering : {{
-	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast" | "cylindercast",
+	type: number,-- 0 | 1 | 6 | 2 | 3 | 4 | 5,
 	origin: Vector3?,
 	direction: Vector3,
 	result: RaycastResult?,
@@ -61,7 +61,7 @@ local function render(event: RBXScriptSignal)
 		end
 
 		Ceive.PushProperty("AlwaysOnTop", v.config.VisAlwaysOnTop)
-		if v.type == "raycast" then
+		if v.type == 0 then
 			local hitLength = v.direction.Magnitude
 			if v.result then
 				Ceive.PushProperty("Color3", v.config.SuccessColor)
@@ -74,7 +74,7 @@ local function render(event: RBXScriptSignal)
 				Ceive.Arrow:Draw(v.origin, v.origin + (v.direction.Unit * hitLength), v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 			end
 		end
-		if v.type == "spherecast" then
+		if v.type == 1 then
 			local hitLength = v.direction.Magnitude
 			if v.result then
 				Ceive.PushProperty("Color3", v.config.SuccessColor)
@@ -90,25 +90,7 @@ local function render(event: RBXScriptSignal)
 				Ceive.Capsule:Draw(CFrame.new(v.origin + v.direction.Unit * hitLength), v.radius, 0, v.config.VisShapeQuality, 360)
 			end
 		end
-		if v.type == "capsulecast" then
-			local hitLength = v.direction.Magnitude
-
-			if v.result then
-				Ceive.PushProperty("Color3", v.config.SuccessColor)
-				hitLength = v.result.Distance
-
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
-				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
-				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
-			else
-				Ceive.PushProperty("Color3", v.config.FailColor)
-
-				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
-				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
-			end
-
-		end
-		if v.type == "shapecast" or v.type == "boxcast" then
+		if v.type == 2 or v.type == 3 then
 			local hitLength = v.direction.Magnitude
 
 			if v.result then
@@ -127,7 +109,7 @@ local function render(event: RBXScriptSignal)
 				Ceive.Text:Draw(v.transform.Position + v.direction.Unit * hitLength, v.type, 10)
 			end
 		end
-		if v.type == "circlecast" then
+		if v.type == 4 then
 			local hitLength = v.direction.Magnitude
 
 			if v.result then
@@ -144,8 +126,7 @@ local function render(event: RBXScriptSignal)
 				Ceive.Arrow:Draw(v.origin, v.direction.Unit * hitLength + v.origin , v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 			end
 		end
-
-		if v.type == "cylindercast" then
+		if v.type == 5 then
 			local hitLength = v.direction.Magnitude
 
 			if v.result then
@@ -160,6 +141,23 @@ local function render(event: RBXScriptSignal)
 
 				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
 				Ceive.Cylinder:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+			end
+		end
+		if v.type == 6 then
+			local hitLength = v.direction.Magnitude
+
+			if v.result then
+				Ceive.PushProperty("Color3", v.config.SuccessColor)
+				hitLength = v.result.Distance
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
+				Ceive.Plane:Draw(v.result.Position, v.result.Normal, Vector3.new(v.config.VisNormalPlaneSize, v.config.VisNormalPlaneSize, 0))
+			else
+				Ceive.PushProperty("Color3", v.config.FailColor)
+
+				Ceive.Arrow:Draw(v.transform.Position, v.direction.Unit * hitLength + v.transform.Position, v.config.VisArrowSize, v.config.VisArrowSize, v.config.VisShapeQuality)
+				Ceive.Capsule:Draw(v.transform + v.direction.Unit * hitLength, v.radius, v.height, v.config.VisShapeQuality)
 			end
 
 		end
@@ -197,7 +195,7 @@ function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastP
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "raycast",
+			type = 0,
 			origin = origin,
 			direction = direction,
 			result = res,
@@ -230,7 +228,7 @@ function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, 
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "spherecast",
+			type = 1,
 			origin = origin,
 			direction = direction,
 			result = res,
@@ -264,7 +262,7 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "shapecast",
+			type = 2,
 			transform = part.CFrame,
 			direction = direction,
 			result = res,
@@ -298,7 +296,7 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "boxcast",
+			type = 3,
 			transform = transform,
 			direction = direction,
 			result = res,
@@ -351,7 +349,7 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "circlecast",
+			type = 4,
 			origin = origin,
 			direction = direction,
 			result = closestHitResult,
@@ -399,7 +397,7 @@ function Caster:Cylindercast(transform: CFrame, height: number, radius: number, 
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "cylindercast",
+			type = 5,
 			direction = direction,
 			result = cylinderResult,
 			radius = radius,
@@ -467,7 +465,7 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 
 	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
-			type = "capsulecast",
+			type = 6,
 			direction = direction,
 			result = closestHit,
 			radius = radius,
