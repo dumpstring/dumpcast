@@ -4,7 +4,7 @@ local Ceive = require(script.Ceive)
 
 local rendering : {{
 	type: "raycast" | "spherecast" | "capsulecast" | "shapecast" | "boxcast" | "circlecast" | "cylindercast",
-	origin: Vector3,
+	origin: Vector3?,
 	direction: Vector3,
 	result: RaycastResult?,
 	radius: number?,
@@ -28,7 +28,7 @@ export type config = {
 	SuccessColor: Color3,
 }
 
-local configbase = {
+local configbase : config = {
 	VisualizeCast = true,
 	VisLifetime = 1,
 	VisAlwaysOnTop = true,
@@ -49,7 +49,7 @@ local function render()
 			continue
 		end
 
-		Ceive.PushProperty("VisAlwaysOnTop", v.config.VisAlwaysOnTop)
+		Ceive.PushProperty("AlwaysOnTop", v.config.VisAlwaysOnTop)
 		if v.type == "raycast" then
 			local hitLength = v.direction.Magnitude
 			if v.result then
@@ -172,7 +172,7 @@ function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastP
 
 	local res = (self.World :: WorldRoot):Raycast(origin, direction, rayparams)
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "raycast",
 			origin = origin,
@@ -197,7 +197,7 @@ function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, 
 
 	local res = (self.World :: WorldRoot):Spherecast(origin, radius, direction, rayparams)
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "spherecast",
 			origin = origin,
@@ -223,7 +223,7 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 
 	local res = (self.World :: WorldRoot):Shapecast(part, direction, rayparams)
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "shapecast",
 			transform = part.CFrame,
@@ -249,7 +249,7 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 
 	local res = (self.World :: WorldRoot):Blockcast(transform, size, direction, rayparams)
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "boxcast",
 			transform = transform,
@@ -274,7 +274,6 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 		end
 	end
 
-	local directionUnit = direction.Unit
 	local angleStep = 2 * math.pi / points
 	local closestHitResult
 	local closestDistance = math.huge
@@ -295,7 +294,7 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 	end
 
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "circlecast",
 			origin = origin,
@@ -335,7 +334,7 @@ function Caster:Cylindercast(transform: CFrame, height: number, radius: number, 
 	cylinderPart:Destroy()
 
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "cylindercast",
 			direction = direction,
@@ -395,7 +394,7 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 	end
 
 
-	if overrideconfig.VisualizeCast then
+	if overrideconfig and overrideconfig.VisualizeCast then
 		local data = {
 			type = "capsulecast",
 			direction = direction,
@@ -470,4 +469,4 @@ export type dumpcast = {
 	StepSignal: RBXScriptSignal,
 }
 
-return (dumpcast :: dumpcast)
+return (dumpcast :: typeof(dumpcast) & dumpcast)
