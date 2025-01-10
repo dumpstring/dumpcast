@@ -170,9 +170,15 @@ end
 
 local dumpcast = {}
 
+local function CheckNaN(vector: Vector3)
+	return vector == vector
+end
+
 local Caster = {}
 
 function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -204,6 +210,8 @@ function Caster:Raycast(origin: Vector3, direction: Vector3, rayparams: RaycastP
 end
 
 function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -236,6 +244,8 @@ function Caster:Spherecast(origin: Vector3, radius: number, direction: Vector3, 
 end
 
 function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -268,6 +278,8 @@ function Caster:Shapecast(part: BasePart, direction: Vector3, rayparams: Raycast
 end
 
 function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -301,6 +313,8 @@ function Caster:Blockcast(transform: CFrame, size: Vector3, direction: Vector3, 
 end
 
 function Caster:Circlecast(origin: Vector3, radius: number, points: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+	
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -353,6 +367,8 @@ function Caster:Circlecast(origin: Vector3, radius: number, points: number, dire
 end
 
 function Caster:Cylindercast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+	
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -399,6 +415,8 @@ function Caster:Cylindercast(transform: CFrame, height: number, radius: number, 
 end
 
 function Caster:Capsulecast(transform: CFrame, height: number, radius: number, direction: Vector3, rayparams: RaycastParams, overrideconfig: config?): RaycastResult?
+	assert(CheckNaN(direction), `Direction contains NaN values > {tostring(direction)}`)
+	
 	overrideconfig = overrideconfig or self.Config
 	if overrideconfig and overrideconfig ~= self.Config then
 		overrideconfig = table.clone(self.Config)
@@ -464,7 +482,7 @@ function Caster:Capsulecast(transform: CFrame, height: number, radius: number, d
 	return closestHit
 end
 
-function dumpcast.new(world: WorldRoot, config: config?): typeof(Caster)
+function dumpcast.new(world: WorldRoot?, config: config?): typeof(Caster)
 	if not config then
 		config = table.clone(configbase)
 	else
